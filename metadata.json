@@ -1,0 +1,8 @@
+{
+  "name": "Orange Kutty",
+  "description": "A warm, personalized pregnancy companion providing daily baby voice messages, gentle guidance, and practical care reminders.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
