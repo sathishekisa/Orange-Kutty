@@ -1,5 +1,5 @@
 import { UserProfile, AppState } from './types';
-import { Heart, MessageCircle, User, Sparkles, Music, Mic, Send, Play, Pause, ChevronRight, Settings, Calendar, RefreshCcw, Volume2, Gamepad2, Citrus } from 'lucide-react';
+import { Heart, MessageCircle, User, Sparkles, Music, Mic, Send, Play, Pause, ChevronRight, Settings, Calendar, RefreshCcw, Volume2, Gamepad2, Citrus, Lightbulb } from 'lucide-react';
 
 export const APP_NAME = "Orange Kutty";
 export const THEME_COLOR = "#FF8C42"; // Soft Orange
@@ -70,8 +70,9 @@ export const INITIAL_STATE: AppState = {
 export const NAV_ITEMS = [
   { view: 'CONNECTION', label: 'Today', icon: Heart },
   { view: 'CHAT', label: 'Memories', icon: MessageCircle },
+  { view: 'TIPS', label: 'Tips', icon: Lightbulb },
   { view: 'GAME', label: 'Care', icon: Citrus },
   { view: 'SETTINGS', label: 'Profile', icon: User },
 ] as const;
 
-export { Heart, MessageCircle, User, Sparkles, Music, Mic, Send, Play, Pause, ChevronRight, Settings, Calendar, RefreshCcw, Volume2, Gamepad2, Citrus };
+export { Heart, MessageCircle, User, Sparkles, Music, Mic, Send, Play, Pause, ChevronRight, Settings, Calendar, RefreshCcw, Volume2, Gamepad2, Citrus, Lightbulb };

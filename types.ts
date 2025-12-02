@@ -3,6 +3,7 @@ export enum ViewState {
   CONNECTION = 'CONNECTION',
   CHAT = 'CHAT',
   GAME = 'GAME',
+  TIPS = 'TIPS',
   SETTINGS = 'SETTINGS'
 }
 

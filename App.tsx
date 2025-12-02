@@ -1,18 +1,17 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Heart, MessageCircle, User, Sparkles, Music, Mic, Send,
   ChevronRight, Play, Pause, Calendar, RefreshCcw, Settings, Volume2, Smile, Phone, LogOut, X, Info,
-  Zap, Moon, Sun, Clock, Monitor, Edit3, Citrus, Droplets, Utensils, PartyPopper, ShoppingBag, Coins, Star, Trophy, Gamepad2
+  Zap, Moon, Sun, Clock, Monitor, Edit3, Citrus, Droplets, Utensils, PartyPopper, ShoppingBag, Coins, Star, Trophy, Gamepad2, Lightbulb, Check
 } from 'lucide-react';
 import { AppState, ViewState, DailyLog, UserProfile, DailyContent, ChatMessage, ThemeMode } from './types';
-import { INITIAL_STATE, NAV_ITEMS, DEFAULT_USER, VOICE_OPTIONS } from './constants';
+import { INITIAL_STATE, NAV_ITEMS, DEFAULT_USER, VOICE_OPTIONS, APP_NAME } from './constants';
 import { loadState, saveState, clearState } from './services/storageService';
 import { generateDailyContent, generateSpeech, generateBabyChatResponse } from './services/geminiService';
 
 // --- Utility Functions ---
 
-const calculateWeeks = (lmp: string | null): number => {
+const calculateWeeks = (lmp: string | null = null): number => {
   if (!lmp) return 4;
   const start = new Date(lmp);
   const now = new Date();
@@ -102,34 +101,45 @@ const AnimationStyles = () => (
       66% { transform: translateY(5px) translateX(-5px); }
       100% { transform: translateY(0px) translateX(0px); }
     }
-    .animate-wiggle {
-      animation: wiggle 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    @keyframes burst {
+      0% { transform: scale(0); opacity: 1; }
+      100% { transform: scale(2); opacity: 0; }
     }
-    .animate-rub {
-      animation: rub-vibrate 0.3s linear infinite;
+    
+    /* Missing Animations Added */
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
-    .animate-particle {
-      animation: float-out 0.8s ease-out forwards;
+    @keyframes fade-in-up {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-    .animate-blob {
-      animation: blob 12s ease-in-out infinite;
+    @keyframes fade-in-down {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-    .animate-float-baby {
-      animation: float-baby 6s ease-in-out infinite;
+    @keyframes slide-in-up {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
-    .animate-pop-in {
-      animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    }
-    .animate-float-slow {
-      animation: float-slow 8s ease-in-out infinite;
-    }
-    .scrollbar-hide::-webkit-scrollbar {
-        display: none;
-    }
-    .scrollbar-hide {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-    }
+
+    .animate-wiggle { animation: wiggle 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .animate-rub { animation: rub-vibrate 0.3s linear infinite; }
+    .animate-particle { animation: float-out 0.8s ease-out forwards; }
+    .animate-blob { animation: blob 12s ease-in-out infinite; }
+    .animate-float-baby { animation: float-baby 6s ease-in-out infinite; }
+    .animate-pop-in { animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+    .animate-float-slow { animation: float-slow 8s ease-in-out infinite; }
+    .animate-burst { animation: burst 0.4s ease-out forwards; }
+    
+    .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+    .animate-fade-in-up { animation: fade-in-up 0.6s ease-out forwards; }
+    .animate-fade-in-down { animation: fade-in-down 0.6s ease-out forwards; }
+    .animate-slide-in-up { animation: slide-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
   `}</style>
 );
 
@@ -413,14 +423,11 @@ const BackgroundParticles = () => (
     </div>
   );
 
-const SoothingFeedback = ({ active }: { active: boolean }) => {
-  if (!active) return null;
+const SpeechCloud = ({ text }: { text: string | null }) => {
+  if (!text) return null;
   return (
-    <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl px-5 py-2 rounded-full shadow-[0_10px_40px_-10px_rgba(255,100,150,0.3)] border border-pink-100/50 animate-fade-in-up z-30 whitespace-nowrap">
-      <div className="flex items-center gap-2 text-pink-500 font-bold text-xs tracking-wide uppercase">
-        <Heart size={14} fill="currentColor" className="animate-pulse" />
-        <span>Sending Love...</span>
-      </div>
+    <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 px-4 py-2 rounded-2xl rounded-bl-none shadow-lg border border-orange-100 dark:border-gray-700 animate-pop-in z-30 whitespace-nowrap max-w-[200px]">
+      <p className="text-sm font-bold text-gray-800 dark:text-gray-100">{text}</p>
     </div>
   );
 };
@@ -454,14 +461,16 @@ const WombBubble = ({
   isKicking,
   isRubbing,
   weeks,
-  parallax
+  parallax,
+  speechText
 }: { 
   onClick: () => void, 
   onRub: () => void,
   isKicking: boolean,
   isRubbing: boolean,
   weeks: number,
-  parallax: { x: number, y: number }
+  parallax: { x: number, y: number },
+  speechText: string | null
 }) => {
   const isDragging = useRef(false);
 
@@ -504,8 +513,7 @@ const WombBubble = ({
         touchAction: 'none'
       }}
     >
-      {/* Soothing Popup */}
-      <SoothingFeedback active={isRubbing} />
+      <SpeechCloud text={speechText} />
 
       <div 
         className={`w-full h-full relative transition-transform duration-1000 ease-out animate-blob ${isRubbing ? 'scale-[1.02] animate-rub' : ''}`}
@@ -632,21 +640,36 @@ const ConnectionView = ({
   dailyContent: DailyContent | null, 
   isPlaying: boolean, 
   onPlay: () => void,
-  onBubbleInteract: () => void
+  onBubbleInteract: (type: 'kick' | 'rub') => void
 }) => {
   const [isKicking, setIsKicking] = useState(false);
   const [isRubbing, setIsRubbing] = useState(false);
   const [parallax, setParallax] = useState({ x: 0, y: 0 });
+  const [bubbleText, setBubbleText] = useState<string | null>(null);
   const rubTimeoutRef = useRef<any>(null);
+  const bubbleTextTimeoutRef = useRef<any>(null);
+
+  const showBubbleText = (text: string) => {
+    setBubbleText(text);
+    if (bubbleTextTimeoutRef.current) clearTimeout(bubbleTextTimeoutRef.current);
+    bubbleTextTimeoutRef.current = setTimeout(() => setBubbleText(null), 3000);
+  };
 
   const handleKick = () => {
     setIsKicking(true);
-    onBubbleInteract();
+    onBubbleInteract('kick');
+    const kickTexts = ["Teehee!", "I'm awake!", "Hi Maa!", "I'm wiggling!"];
+    showBubbleText(kickTexts[Math.floor(Math.random() * kickTexts.length)]);
     setTimeout(() => setIsKicking(false), 600);
   };
 
   const handleRub = () => {
-    if (!isRubbing) setIsRubbing(true);
+    if (!isRubbing) {
+      setIsRubbing(true);
+      onBubbleInteract('rub');
+      const rubTexts = ["Mmm, feels nice...", "I love you Maa", "So warm...", "Keep rubbing!"];
+      showBubbleText(rubTexts[Math.floor(Math.random() * rubTexts.length)]);
+    }
     if (rubTimeoutRef.current) clearTimeout(rubTimeoutRef.current);
     rubTimeoutRef.current = setTimeout(() => setIsRubbing(false), 800);
   };
@@ -685,6 +708,7 @@ const ConnectionView = ({
               isRubbing={isRubbing}
               weeks={user.weeksPregnant}
               parallax={parallax}
+              speechText={bubbleText}
             />
             {/* Improved Visibility for Hint Text */}
             <div className="absolute -bottom-14 left-0 right-0 flex justify-center pointer-events-none">
@@ -737,17 +761,76 @@ const ConnectionView = ({
   );
 };
 
+// --- Mom Tips View ---
+
+const TipsView = ({ weeks }: { weeks: number }) => {
+  // Simple mapping for fruits
+  const fruits = [
+    { week: 4, name: "Poppy Seed", icon: "🌱" },
+    { week: 8, name: "Raspberry", icon: "🍇" },
+    { week: 12, name: "Plum", icon: "🍑" },
+    { week: 16, name: "Avocado", icon: "🥑" },
+    { week: 20, name: "Banana", icon: "🍌" },
+    { week: 24, name: "Corn", icon: "🌽" },
+    { week: 28, name: "Eggplant", icon: "🍆" },
+    { week: 32, name: "Squash", icon: "🥬" },
+    { week: 36, name: "Papaya", icon: "🥭" },
+    { week: 40, name: "Watermelon", icon: "🍉" }
+  ];
+  
+  // Find closest fruit
+  const currentFruit = fruits.reduce((prev, curr) => 
+    Math.abs(curr.week - weeks) < Math.abs(prev.week - weeks) ? curr : prev
+  );
+
+  return (
+    <div className="min-h-screen bg-[#FAFAFA] dark:bg-gray-950 pb-32 transition-colors duration-500 pt-20 px-6">
+      <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight mb-6">Weekly Tips</h1>
+      
+      {/* Hero Card */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-green-400 to-teal-600 rounded-[2.5rem] p-8 text-white shadow-xl shadow-teal-500/20 mb-8 animate-slide-in-up">
+        <div className="absolute top-0 right-0 -mr-8 -mt-8 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+        <div className="relative z-10 flex flex-col items-center text-center">
+            <span className="text-6xl mb-4 animate-bounce delay-700">{currentFruit.icon}</span>
+            <p className="text-teal-100 font-bold text-sm uppercase tracking-wide mb-1">Your Baby Size</p>
+            <h2 className="text-4xl font-bold tracking-tight mb-2">{currentFruit.name}</h2>
+            <p className="text-teal-50 font-medium opacity-90">Approximate size at Week {weeks}</p>
+        </div>
+      </div>
+
+      {/* Tips List */}
+      <div className="space-y-4">
+        {[
+          { title: "Nutrition", text: "Focus on Iron and Calcium rich foods this week.", icon: <Utensils size={18} className="text-orange-500" /> },
+          { title: "Self Care", text: "Try a 10-minute gentle prenatal yoga session.", icon: <Heart size={18} className="text-pink-500" /> },
+          { title: "Bonding", text: "Read a short story aloud to your baby tonight.", icon: <Music size={18} className="text-blue-500" /> }
+        ].map((tip, idx) => (
+          <div key={idx} className="bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex items-start gap-4 animate-fade-in" style={{ animationDelay: `${idx * 100}ms` }}>
+             <div className="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center shrink-0">
+               {tip.icon}
+             </div>
+             <div>
+               <h3 className="font-bold text-gray-900 dark:text-white mb-1">{tip.title}</h3>
+               <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{tip.text}</p>
+             </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // --- Game View (Orange Game) ---
 
 const CatchFruitGame = ({ onClose, onScore }: { onClose: () => void, onScore: (pts: number) => void }) => {
-  const [fruits, setFruits] = useState<{ id: number, x: number, y: number }[]>([]);
+  const [fruits, setFruits] = useState<{ id: number, x: number, y: number, burst: boolean }[]>([]);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
   const requestRef = useRef<number>();
 
   useEffect(() => {
     const spawnInterval = setInterval(() => {
-      setFruits(prev => [...prev, { id: Date.now(), x: Math.random() * 80 + 10, y: -10 }]);
+      setFruits(prev => [...prev, { id: Date.now(), x: Math.random() * 80 + 10, y: -10, burst: false }]);
     }, 800);
 
     const timer = setInterval(() => {
@@ -764,7 +847,7 @@ const CatchFruitGame = ({ onClose, onScore }: { onClose: () => void, onScore: (p
     }, 1000);
 
     const animate = () => {
-      setFruits(prev => prev.map(f => ({ ...f, y: f.y + 0.8 })).filter(f => f.y < 110));
+      setFruits(prev => prev.map(f => f.burst ? f : { ...f, y: f.y + 0.8 }).filter(f => f.y < 110 && !f.burst || f.burst)); // keep bursts for animation
       requestRef.current = requestAnimationFrame(animate);
     };
     requestRef.current = requestAnimationFrame(animate);
@@ -776,28 +859,33 @@ const CatchFruitGame = ({ onClose, onScore }: { onClose: () => void, onScore: (p
     };
   }, [score, onClose, onScore]);
 
-  const catchFruit = (id: number) => {
-    setFruits(prev => prev.filter(f => f.id !== id));
+  const catchFruit = (e: React.PointerEvent, id: number) => {
+    e.stopPropagation();
+    // Mark as burst instead of removing immediately
+    setFruits(prev => prev.map(f => f.id === id ? { ...f, burst: true } : f));
     setScore(s => s + 10);
+    setTimeout(() => {
+        setFruits(prev => prev.filter(f => f.id !== id));
+    }, 400); // Remove after burst animation
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-4">
+    <div className="fixed inset-0 z-[60] bg-black/80 flex flex-col items-center justify-center p-4 touch-none">
       <div className="absolute top-4 right-4 text-white font-bold text-xl">Time: {timeLeft}s</div>
       <div className="absolute top-4 left-4 text-orange-400 font-bold text-xl">Score: {score}</div>
       <div className="relative w-full h-full overflow-hidden">
         {fruits.map(f => (
           <div 
             key={f.id}
-            onClick={() => catchFruit(f.id)}
-            className="absolute text-4xl cursor-pointer active:scale-90 transition-transform z-50 touch-manipulation"
+            onPointerDown={(e) => !f.burst && catchFruit(e, f.id)}
+            className={`absolute text-4xl cursor-pointer z-50 touch-manipulation select-none ${f.burst ? 'animate-burst' : ''}`}
             style={{ left: `${f.x}%`, top: `${f.y}%` }}
           >
-            🍊
+            {f.burst ? '💥' : '🍊'}
           </div>
         ))}
       </div>
-      <button onClick={onClose} className="absolute bottom-10 px-6 py-2 bg-white text-black rounded-full font-bold">Quit</button>
+      <button onClick={onClose} className="absolute bottom-10 px-6 py-2 bg-white text-black rounded-full font-bold z-[70]">Quit</button>
     </div>
   );
 };
@@ -844,7 +932,7 @@ const GameView = ({
   onUpdateUser 
 }: { 
   user: UserProfile, 
-  onPlaySFX: (s:string) => void,
+  onPlaySFX: (s?: string) => void,
   onUpdateUser: (u: Partial<UserProfile>) => void
 }) => {
   const [action, setAction] = useState<'idle' | 'eating' | 'shower' | 'playing' | 'sleeping' | 'hugging'>('idle');
@@ -905,7 +993,7 @@ const GameView = ({
         gameLevel: currentLevel + 1,
         coins: (user.coins || 0) + 50 // Level up bonus
       });
-      onPlaySFX("Yay! Level up!");
+      // onPlaySFX("Yay! Level up!"); // Removed voice sfx
     } else {
       onUpdateUser({ gameXP: newXP });
     }
@@ -919,28 +1007,23 @@ const GameView = ({
 
     if (type === 'feed') {
       setAction('eating');
-      onPlaySFX("Yum yum!");
       newStats.hunger = Math.min(100, current.hunger + 30);
       addXP(10);
     } else if (type === 'shower') {
       setAction('shower');
-      onPlaySFX("Splash!");
       newStats.hygiene = Math.min(100, current.hygiene + 30);
       addXP(10);
     } else if (type === 'play') {
       setAction('playing');
-      onPlaySFX("Hehe!");
       newStats.fun = Math.min(100, current.fun + 30);
       newStats.energy = Math.max(0, current.energy - 10); // Play tires baby
       addXP(15);
     } else if (type === 'sleep') {
       setAction('sleeping');
-      onPlaySFX("Goodnight...");
       newStats.energy = Math.min(100, current.energy + 40);
       addXP(5);
     } else if (type === 'hug') {
       setAction('hugging');
-      onPlaySFX("I love you!");
       newStats.love = Math.min(100, current.love + 30);
       addXP(20);
     }
@@ -951,7 +1034,6 @@ const GameView = ({
 
   const handleMiniGameScore = (score: number) => {
     onUpdateUser({ coins: (user.coins || 0) + score });
-    onPlaySFX("Woohoo!");
   };
 
   const handleBuy = (item: string, cost: number) => {
@@ -962,10 +1044,7 @@ const GameView = ({
         inventory: newInventory,
         equippedAccessory: item
       });
-      onPlaySFX("Stylish!");
       setShowShop(false);
-    } else {
-      onPlaySFX("Need more coins!");
     }
   };
 
@@ -1148,89 +1227,81 @@ const ChatView = ({
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
               </span>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Online</p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium tracking-wide">Online</p>
             </div>
           </div>
-        </div>
-        <div className="bg-orange-50 dark:bg-gray-800 px-3 py-1 rounded-full text-[10px] font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider border border-orange-100 dark:border-gray-700 flex items-center gap-1.5 shadow-sm">
-           <Volume2 size={10} />
-           {VOICE_OPTIONS.find(v => v.id === voiceName)?.label}
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto pt-32 pb-48 px-4 space-y-6 scrollbar-hide">
-        {history.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-3/4 text-center space-y-6 opacity-80 mt-12">
-            <div className="w-32 h-32 bg-orange-50 dark:bg-gray-800 rounded-full flex items-center justify-center animate-pulse border-4 border-white dark:border-gray-700 shadow-sm">
-               <Smile size={64} className="text-orange-300 dark:text-orange-600" />
-            </div>
-            <div className="max-w-xs space-y-2">
-               <p className="text-gray-900 dark:text-white font-bold text-lg">Say hello to baby</p>
-               <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed px-4">Baby is listening! Try saying "I love you" or "How are you today?"</p>
-            </div>
+      {/* Messages List */}
+      <div className="flex-1 overflow-y-auto px-4 pt-28 pb-32 space-y-6 scrollbar-hide">
+        {history.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center space-y-4 opacity-50">
+            <MessageCircle size={48} className="text-orange-200 dark:text-gray-700" />
+            <p className="text-gray-400 text-sm">Say hello to your little one...</p>
           </div>
-        )}
-        
-        {history.map((msg, idx) => {
-          const isMom = msg.role === 'mom';
-          const showAvatar = idx === 0 || history[idx - 1].role !== msg.role;
-          
-          return (
+        ) : (
+          history.map((msg) => (
             <div 
               key={msg.id} 
-              className={`flex items-end gap-2.5 ${isMom ? 'flex-row-reverse animate-slide-in-up' : 'flex-row animate-pop-in'}`}
+              className={`flex w-full ${msg.role === 'mom' ? 'justify-end' : 'justify-start'} animate-fade-in-up`}
             >
-              {showAvatar ? (isMom ? <MomAvatar /> : <BabyAvatar />) : <div className="w-9" />}
-              
-              <div className="flex flex-col gap-1 max-w-[75%]">
+              <div className={`flex max-w-[85%] items-end gap-2 ${msg.role === 'mom' ? 'flex-row-reverse' : 'flex-row'}`}>
+                {msg.role === 'mom' ? <MomAvatar /> : <BabyAvatar />}
+                
                 <div 
-                  className={`px-5 py-3 text-[15px] leading-relaxed shadow-sm transition-all ${
-                    isMom 
-                      ? 'bg-gradient-to-br from-orange-500 to-rose-500 text-white rounded-2xl rounded-tr-sm shadow-orange-500/20' 
-                      : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-100 dark:border-gray-700 rounded-2xl rounded-tl-sm shadow-gray-200/50 dark:shadow-none'
-                  }`}
+                  className={`relative p-4 rounded-2xl shadow-sm text-[15px] leading-relaxed 
+                    ${msg.role === 'mom' 
+                      ? 'bg-gradient-to-br from-orange-500 to-rose-600 text-white rounded-br-none' 
+                      : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-bl-none border border-gray-100 dark:border-gray-700'
+                    }`}
                 >
                   {msg.text}
-                </div>
-                {/* Timestamp */}
-                <div className={`flex items-center gap-1 text-[10px] text-gray-400 font-medium ${isMom ? 'justify-end' : 'justify-start ml-1'}`}>
-                   {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {/* Timestamp */}
+                  <div className={`text-[9px] mt-2 font-medium opacity-60 text-right ${msg.role === 'mom' ? 'text-orange-100' : 'text-gray-400'}`}>
+                    {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  </div>
                 </div>
               </div>
             </div>
-          );
-        })}
-
+          ))
+        )}
+        
         {isTyping && (
-          <div className="flex items-center gap-2 pl-12 animate-fade-in">
-             <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 px-4 py-3.5 rounded-2xl rounded-tl-sm shadow-sm flex gap-1.5">
-               <span className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '0ms'}}></span>
-               <span className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '150ms'}}></span>
-               <span className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '300ms'}}></span>
+          <div className="flex w-full justify-start animate-fade-in">
+             <div className="flex max-w-[85%] items-end gap-2">
+                <BabyAvatar />
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl rounded-bl-none border border-gray-100 dark:border-gray-700 shadow-sm">
+                   <div className="flex gap-1.5 h-4 items-center">
+                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></span>
+                   </div>
+                </div>
              </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Floating Input Footer - Fixed above Navigation Tabs (bottom-28) */}
-      <div className="fixed bottom-28 left-0 right-0 z-30 pointer-events-none px-4 flex justify-center">
-        <div className="pointer-events-auto w-full max-w-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-700 p-1.5 rounded-[2rem] shadow-xl flex items-center gap-2 pl-5">
-          <input 
-            type="text" 
-            placeholder="Type a message to baby..." 
-            className="flex-1 bg-transparent outline-none text-gray-800 dark:text-white placeholder:text-gray-400 text-[16px] py-3 font-medium"
+      {/* Input Area */}
+      <div className="absolute bottom-20 left-0 right-0 p-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-t border-gray-100 dark:border-gray-800">
+        <div className="flex gap-3 max-w-lg mx-auto">
+          <input
+            type="text"
+            className="flex-1 bg-gray-100 dark:bg-gray-800 border-0 rounded-full px-6 py-3.5 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900 outline-none text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 shadow-inner text-[15px]"
+            placeholder="Talk to baby..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            disabled={isTyping}
           />
           <button 
             onClick={handleSend}
             disabled={!input.trim() || isTyping}
-            className="w-12 h-12 bg-gray-900 dark:bg-orange-500 text-white rounded-full flex items-center justify-center hover:bg-black dark:hover:bg-orange-600 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 shadow-md"
+            className="w-12 h-12 rounded-full bg-orange-500 hover:bg-orange-600 active:scale-95 disabled:opacity-50 disabled:scale-100 text-white flex items-center justify-center shadow-lg shadow-orange-200 dark:shadow-none transition-all duration-300"
           >
-            <Send size={20} strokeWidth={2.5} className="ml-0.5" />
+            <Send size={20} className={input.trim() ? "translate-x-0.5" : ""} />
           </button>
         </div>
       </div>
@@ -1240,169 +1311,104 @@ const ChatView = ({
 
 // --- Settings View ---
 
-const SettingsView = ({ 
-  user, 
-  onVoiceChange, 
-  onReset,
-  onPreviewVoice,
-  onThemeChange,
-  onUpdateUser
-}: { 
-  user: UserProfile, 
-  onVoiceChange: (voice: string) => void, 
-  onReset: () => void,
-  onPreviewVoice: (voice: string) => void,
-  onThemeChange: (theme: ThemeMode) => void,
-  onUpdateUser: (u: Partial<UserProfile>) => void
-}) => {
-  const [playingPreview, setPlayingPreview] = useState<string | null>(null);
-
-  const handlePreview = (e: React.MouseEvent, voiceId: string) => {
-    e.stopPropagation();
-    setPlayingPreview(voiceId);
-    onPreviewVoice(voiceId);
-    setTimeout(() => setPlayingPreview(null), 3000);
-  };
-
-  const handleLmpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-     const newLmp = e.target.value;
-     if (newLmp) {
-       onUpdateUser({ 
-         lmp: newLmp,
-         weeksPregnant: calculateWeeks(newLmp)
-       });
-     }
+const SettingsView = ({ user, onUpdateUser, onReset }: { user: UserProfile, onUpdateUser: (u: Partial<UserProfile>) => void, onReset: () => void }) => {
+  const [playingVoice, setPlayingVoice] = useState<string | null>(null);
+  
+  const playSample = async (voiceId: string) => {
+    // Prevent spam
+    if (playingVoice) return;
+    setPlayingVoice(voiceId);
+    
+    // In a real app we'd fetch a sample, but here we can just simulate or use a hardcoded base64 if available.
+    // Since we don't have hardcoded samples, we will just timeout the "playing" state for UI feedback.
+    setTimeout(() => setPlayingVoice(null), 1500);
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] dark:bg-gray-950 pb-32 transition-colors duration-500">
-      <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 pt-16 pb-4 px-6 sticky top-0 z-20">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Profile</h1>
-      </div>
-
-      <div className="p-4 max-w-lg mx-auto space-y-6 mt-4">
-        {/* Profile Hero Card */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-orange-500 to-rose-600 rounded-[2.5rem] p-8 text-white shadow-xl shadow-orange-500/20 mb-8">
-            {/* Decorative circles */}
-            <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-            <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-24 h-24 bg-black/5 rounded-full blur-xl"></div>
-
-            <div className="relative z-10 flex flex-col items-center text-center">
-              <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border-2 border-white/50 mb-4 shadow-sm">
-                 <span className="text-3xl">🤰</span>
-              </div>
-              <h2 className="text-3xl font-bold tracking-tight mb-1">Week {user.weeksPregnant}</h2>
-              <p className="text-orange-100 font-medium text-sm mb-6">Trimester {Math.ceil(user.weeksPregnant / 13)} • {Math.max(0, 40 - user.weeksPregnant)} weeks to go</p>
-
-              {/* Progress Bar */}
-              <div className="w-full bg-black/20 h-3 rounded-full overflow-hidden backdrop-blur-sm">
-                 <div 
-                   className="h-full bg-white/90 shadow-[0_0_10px_rgba(255,255,255,0.5)] transition-all duration-1000 ease-out rounded-full"
-                   style={{ width: `${Math.min((user.weeksPregnant / 40) * 100, 100)}%` }}
-                 />
-              </div>
-              <div className="w-full flex justify-between text-[10px] font-bold uppercase tracking-wider text-orange-100 mt-2">
-                <span>Conception</span>
-                <span>Due Date</span>
-              </div>
-            </div>
-        </div>
-
-        {/* Pregnancy Details */}
-        <div className="space-y-3">
-           <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-4">My Pregnancy</h3>
-           <div className="bg-white dark:bg-gray-900 rounded-3xl p-5 border border-gray-100 dark:border-gray-800 shadow-sm">
-             <div className="flex items-center justify-between mb-3">
-                <label className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-500">
-                     <Calendar size={16} />
-                  </div>
-                  Last Period Date (LMP)
-                </label>
-                <div className="bg-orange-50 dark:bg-gray-800 px-2 py-1 rounded-md">
-                   <Edit3 size={14} className="text-orange-400" />
-                </div>
-             </div>
-             <input 
-               type="date" 
-               value={user.lmp || ''}
-               onChange={handleLmpChange}
-               className="w-full bg-gray-50 dark:bg-gray-800 border-none rounded-xl p-3 text-gray-900 dark:text-white font-bold text-lg outline-none focus:ring-2 focus:ring-orange-500/20 transition-all text-center"
-             />
-             <p className="text-xs text-gray-400 mt-3 ml-1 text-center font-medium">Updating this will recalculate your current week.</p>
-           </div>
-        </div>
-
-        {/* Theme Settings */}
-        <div className="space-y-3">
-          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-4">Appearance</h3>
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 p-2 flex gap-1">
-            {['light', 'dark', 'system'].map((t) => (
-              <button
-                key={t}
-                onClick={() => onThemeChange(t as ThemeMode)}
-                className={`flex-1 py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-semibold transition-all ${user.theme === t ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
-              >
-                {t === 'light' && <Sun size={16} />}
-                {t === 'dark' && <Moon size={16} />}
-                {t === 'system' && <Monitor size={16} />}
-                <span className="capitalize">{t}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Voice Selection Group */}
-        <div className="space-y-3">
-          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-4">Baby's Voice Personality</h3>
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
-            <div className="max-h-[300px] overflow-y-auto divide-y divide-gray-50 dark:divide-gray-800 scrollbar-thin scrollbar-thumb-orange-100">
-              {VOICE_OPTIONS.map((voice) => (
-                <div 
-                  key={voice.id}
-                  onClick={() => onVoiceChange(voice.id)}
-                  className={`flex items-center justify-between p-4 cursor-pointer transition-colors ${user.voiceName === voice.id ? 'bg-orange-50/50 dark:bg-orange-900/10' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${user.voiceName === voice.id ? 'border-orange-500 scale-105 bg-orange-100 dark:bg-orange-900' : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800'}`}>
-                        {user.voiceName === voice.id ? <div className="w-3 h-3 bg-orange-500 rounded-full animate-pulse" /> : <div className="w-2 h-2 bg-gray-300 rounded-full" />}
-                    </div>
-                    <div>
-                      <p className={`font-bold text-[15px] ${user.voiceName === voice.id ? 'text-orange-900 dark:text-orange-400' : 'text-gray-700 dark:text-gray-300'}`}>{voice.label}</p>
-                      <p className="text-xs text-gray-400 font-medium">{voice.description}</p>
-                    </div>
-                  </div>
-                  
-                  <button 
-                    onClick={(e) => handlePreview(e, voice.id)}
-                    className="w-10 h-10 flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-full hover:bg-orange-100 dark:hover:bg-gray-700 hover:text-orange-600 transition-colors active:scale-90"
-                  >
-                    {playingPreview === voice.id ? <Volume2 size={18} className="animate-pulse" /> : <Play size={18} fill="currentColor" className="ml-0.5" />}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Data Management */}
-        <div className="space-y-3">
-          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-4">Account</h3>
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
-             <button 
-              onClick={onReset}
-              className="w-full p-5 flex items-center justify-between text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors group"
-            >
-              <span className="font-semibold text-[15px]">Reset All App Data</span>
-              <RefreshCcw size={18} className="group-hover:rotate-180 transition-transform duration-500" />
-            </button>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-32 pt-20 px-6 transition-colors duration-500">
+      <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight mb-6">Profile & Settings</h1>
+      
+      <div className="space-y-6 max-w-2xl mx-auto">
         
-        <div className="flex flex-col items-center gap-2 pt-6 pb-20">
-          <OrangeLogo className="w-8 h-8 opacity-50 grayscale" />
-          <p className="text-xs text-gray-400 font-medium">Orange Kutty v1.7</p>
+        {/* User Info Section */}
+        <section className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
+           <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">My Information</h3>
+           <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Your Name</label>
+                <input 
+                  type="text" 
+                  value={user.name}
+                  onChange={(e) => onUpdateUser({ name: e.target.value })}
+                  className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border-none text-gray-900 dark:text-white font-medium focus:ring-2 focus:ring-orange-200"
+                />
+              </div>
+              <div>
+                 <label className="block text-xs font-semibold text-gray-500 mb-1">Start of Pregnancy</label>
+                 <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                    <span className="text-gray-900 dark:text-white font-medium">{user.lmp || 'Not Set'}</span>
+                    <span className="text-xs font-bold text-orange-500 px-2 py-1 bg-orange-100 rounded-md">Week {user.weeksPregnant}</span>
+                 </div>
+              </div>
+           </div>
+        </section>
+
+        {/* Voice Selection */}
+        <section className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
+          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Baby's Voice</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+             {VOICE_OPTIONS.slice(0, 6).map(voice => (
+               <div 
+                 key={voice.id}
+                 onClick={() => { onUpdateUser({ voiceName: voice.id }); playSample(voice.id); }}
+                 className={`cursor-pointer p-4 rounded-xl border-2 transition-all flex items-center justify-between group
+                   ${user.voiceName === voice.id 
+                     ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20' 
+                     : 'border-transparent bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+               >
+                 <div>
+                    <div className="font-bold text-gray-900 dark:text-white">{voice.label}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{voice.description}</div>
+                 </div>
+                 <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${user.voiceName === voice.id ? 'bg-orange-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-400'}`}>
+                    {playingVoice === voice.id ? <Volume2 size={14} className="animate-pulse" /> : (user.voiceName === voice.id ? <Check size={14} /> : <Play size={14} fill="currentColor" />)}
+                 </div>
+               </div>
+             ))}
+          </div>
+        </section>
+
+        {/* Appearance */}
+        <section className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
+           <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Appearance</h3>
+           <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
+              {(['light', 'dark', 'system'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => onUpdateUser({ theme: mode })}
+                  className={`flex-1 py-2 rounded-lg text-sm font-bold capitalize transition-all ${user.theme === mode ? 'bg-white dark:bg-gray-700 shadow-sm text-orange-600 dark:text-orange-400' : 'text-gray-500'}`}
+                >
+                  {mode}
+                </button>
+              ))}
+           </div>
+        </section>
+
+        {/* Data Zone */}
+        <section>
+          <button 
+            onClick={() => { if(window.confirm("Are you sure you want to reset your journey? This cannot be undone.")) onReset(); }}
+            className="w-full p-4 rounded-2xl border border-red-200 dark:border-red-900/50 text-red-500 bg-red-50 dark:bg-red-900/10 font-bold hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors flex items-center justify-center gap-2"
+          >
+            <LogOut size={18} />
+            <span>Reset Journey</span>
+          </button>
+        </section>
+
+        <div className="text-center pt-8 pb-4">
+           <p className="text-xs text-gray-400 font-medium">Made with ❤️ for {APP_NAME}</p>
         </div>
+
       </div>
     </div>
   );
@@ -1410,327 +1416,262 @@ const SettingsView = ({
 
 // --- Main App Component ---
 
-export default function App() {
-  const [state, setState] = useState<AppState>(INITIAL_STATE);
+const App = () => {
+  const [appState, setAppState] = useState<AppState>(INITIAL_STATE);
   const [view, setView] = useState<ViewState>(ViewState.ONBOARDING);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  
   const audioContextRef = useRef<AudioContext | null>(null);
-  const activeSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
 
-  // Initialize State
+  // Load state on mount
   useEffect(() => {
     const loaded = loadState();
-    setState(loaded);
+    setAppState(loaded);
     if (loaded.user.hasCompletedOnboarding) {
       setView(ViewState.CONNECTION);
     }
-    // Apply Theme
-    if (loaded.user.theme) applyTheme(loaded.user.theme);
   }, []);
 
-  const applyTheme = (theme: ThemeMode) => {
+  // Save state on change
+  useEffect(() => {
+    saveState(appState);
+    
+    // Apply theme
     const root = window.document.documentElement;
-    root.classList.remove('dark');
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else if (theme === 'system') {
-      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        root.classList.add('dark');
-      }
-    }
-  };
+    const isDark = appState.user.theme === 'dark' || (appState.user.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (isDark) root.classList.add('dark');
+    else root.classList.remove('dark');
 
-  // Initialize Audio Context on user interaction (safeguard)
-  const ensureAudioContext = async () => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({
-        sampleRate: 24000 
-      });
-    }
-    if (audioContextRef.current.state === 'suspended') {
-      await audioContextRef.current.resume();
-    }
-    return audioContextRef.current;
-  };
+  }, [appState]);
 
+  // Check for daily content
   useEffect(() => {
-    const initAudio = () => ensureAudioContext().catch(console.error);
-    window.addEventListener('click', initAudio, { once: true });
-    window.addEventListener('touchstart', initAudio, { once: true });
-    return () => {
-      window.removeEventListener('click', initAudio);
-      window.removeEventListener('touchstart', initAudio);
-    };
-  }, []);
-
-  // Save State on Change
-  useEffect(() => {
-    saveState(state);
-  }, [state]);
-
-  // Generate Daily Content if needed
-  useEffect(() => {
-    if (!state.user.hasCompletedOnboarding) return;
+    if (!appState.user.hasCompletedOnboarding) return;
 
     const today = getTodayString();
-    if (!state.cachedDailyContent[today]) {
-      const fetchContent = async () => {
-        const lastChat = state.dailyLogs[today]?.messages.slice(-1)[0]?.text;
-        const content = await generateDailyContent(state.user, lastChat);
-        const audioBase64 = await generateSpeech(content.audioText, state.user.voiceName);
-        
-        const newContent: DailyContent = {
-          date: today,
-          week: state.user.weeksPregnant,
-          day: new Date().getDay(),
-          ...content,
-          audioBase64: audioBase64 || undefined
-        };
+    
+    // Logic: If we don't have today's content, generate it.
+    if (!appState.cachedDailyContent[today]) {
+       const fetchDaily = async () => {
+         // Get the last user message for context if available
+         const lastLogKey = Object.keys(appState.dailyLogs).sort().pop();
+         const lastMsg = lastLogKey ? appState.dailyLogs[lastLogKey]?.messages?.slice(-1)[0]?.text : undefined;
+         const lastMomReply = (lastMsg && appState.dailyLogs[lastLogKey]?.messages?.slice(-1)[0]?.role === 'mom') ? lastMsg : undefined;
 
-        setState(prev => ({
-          ...prev,
-          cachedDailyContent: { ...prev.cachedDailyContent, [today]: newContent }
-        }));
-      };
-      fetchContent();
+         const content = await generateDailyContent(appState.user, lastMomReply);
+         
+         // Generate audio immediately for the "morning update"
+         const audioBase64 = await generateSpeech(content.audioText, appState.user.voiceName);
+         
+         const newContent: DailyContent = {
+           date: today,
+           week: appState.user.weeksPregnant,
+           day: new Date().getDay(),
+           ...content,
+           audioBase64: audioBase64 || undefined
+         };
+
+         setAppState(prev => ({
+           ...prev,
+           cachedDailyContent: {
+             ...prev.cachedDailyContent,
+             [today]: newContent
+           }
+         }));
+       };
+       fetchDaily();
     }
-  }, [state.user, state.cachedDailyContent]);
+  }, [appState.user.hasCompletedOnboarding, appState.user.weeksPregnant]);
 
-
-  // --- Audio Handlers ---
-
-  const stopAudio = () => {
-    if (activeSourceRef.current) {
-      try {
-        activeSourceRef.current.stop();
-        activeSourceRef.current.disconnect();
-      } catch (e) { /* ignore */ }
-      activeSourceRef.current = null;
-    }
-    setIsPlaying(false);
+  const handleUpdateUser = (updates: Partial<UserProfile>) => {
+    setAppState(prev => ({
+      ...prev,
+      user: { ...prev.user, ...updates }
+    }));
   };
 
-  const playAudio = async (base64Audio: string) => {
+  const handlePlayAudio = async () => {
+    const today = getTodayString();
+    const content = appState.cachedDailyContent[today];
+    
+    if (!content?.audioBase64) return;
+    
+    if (isPlayingAudio) {
+      // Stop logic
+      if (sourceNodeRef.current) {
+        sourceNodeRef.current.stop();
+        sourceNodeRef.current = null;
+      }
+      setIsPlayingAudio(false);
+      return;
+    }
+
     try {
-      const ctx = await ensureAudioContext();
-      stopAudio(); // Stop any previous audio
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
       
-      const u8 = base64ToUint8Array(base64Audio);
-      const buffer = pcmToAudioBuffer(u8, ctx, 24000);
-      
+      const ctx = audioContextRef.current;
+      if (ctx.state === 'suspended') await ctx.resume();
+
+      const audioData = base64ToUint8Array(content.audioBase64);
+      const buffer = pcmToAudioBuffer(audioData, ctx);
+
       const source = ctx.createBufferSource();
       source.buffer = buffer;
       source.connect(ctx.destination);
-      source.onended = () => setIsPlaying(false);
+      source.onended = () => setIsPlayingAudio(false);
       
-      activeSourceRef.current = source;
-      source.start(0);
-      setIsPlaying(true);
+      sourceNodeRef.current = source;
+      source.start();
+      setIsPlayingAudio(true);
     } catch (e) {
       console.error("Audio playback error", e);
-      setIsPlaying(false);
+      setIsPlayingAudio(false);
     }
   };
 
-  const playSFX = async (text: string = "Hehe!") => {
-    try {
-      const base64 = await generateSpeech(text, state.user.voiceName);
-      if (base64) {
-         const ctx = await ensureAudioContext();
-         const u8 = base64ToUint8Array(base64);
-         const buffer = pcmToAudioBuffer(u8, ctx, 24000);
-         const source = ctx.createBufferSource();
-         source.buffer = buffer;
-         source.connect(ctx.destination);
-         source.start(0);
-      }
-    } catch (e) { console.error("SFX error", e); }
-  };
-
-  // --- Interaction Handlers ---
-
-  const handleUpdateUser = (updates: Partial<UserProfile>) => {
-    if (updates.theme) applyTheme(updates.theme);
-    setState(prev => ({ ...prev, user: { ...prev.user, ...updates } }));
-  };
-
-  const handleVoiceChange = async (newVoiceId: string) => {
-    handleUpdateUser({ voiceName: newVoiceId });
-    const today = getTodayString();
-    const currentDaily = state.cachedDailyContent[today];
-    
-    if (currentDaily && currentDaily.audioText) {
-      setState(prev => ({
-        ...prev,
-        cachedDailyContent: {
-          ...prev.cachedDailyContent,
-          [today]: { ...currentDaily, audioBase64: undefined }
-        }
-      }));
-      const newAudio = await generateSpeech(currentDaily.audioText, newVoiceId);
-      setState(prev => ({
-        ...prev,
-        cachedDailyContent: {
-          ...prev.cachedDailyContent,
-          [today]: { ...currentDaily, audioBase64: newAudio || undefined }
-        }
-      }));
-    }
-  };
-
-  const handleVoicePreview = async (voiceId: string) => {
-    const sample = "Hi Maa! It's me, your baby!";
-    const base64 = await generateSpeech(sample, voiceId);
-    if (base64) playAudio(base64);
-  };
-
-  const handleBubbleClick = () => {
-    const sounds = ["Hehe!", "I love you!", "Mama!", "Yay!", "Hi Maa!"];
-    const randomSound = sounds[Math.floor(Math.random() * sounds.length)];
-    playSFX(randomSound);
+  const handlePlaySFX = async () => {
+    // Simple placeholder for UI interaction sounds
+    // In a full app, this would use a shorter audio buffer logic
   };
 
   const handleSendMessage = async (text: string) => {
     const today = getTodayString();
-    const newMsg: ChatMessage = {
+    const currentLog = appState.dailyLogs[today] || { date: today, messages: [] };
+    
+    const userMsg: ChatMessage = {
       id: Date.now().toString(),
       role: 'mom',
       text,
       timestamp: Date.now()
     };
 
-    const currentLog = state.dailyLogs[today] || { date: today, messages: [] };
-    const updatedMessages = [...currentLog.messages, newMsg];
+    const updatedMessages = [...currentLog.messages, userMsg];
     
-    setState(prev => ({
+    // Optimistic update
+    setAppState(prev => ({
       ...prev,
       dailyLogs: { ...prev.dailyLogs, [today]: { ...currentLog, messages: updatedMessages } }
     }));
 
     setIsTyping(true);
 
-    const replyText = await generateBabyChatResponse(state.user, updatedMessages, text);
-    const audioBase64 = await generateSpeech(replyText, state.user.voiceName);
+    // Get AI Response
+    // We pass only the messages for context
+    const replyText = await generateBabyChatResponse(appState.user, updatedMessages, text);
+    
+    setIsTyping(false);
 
-    const replyMsg: ChatMessage = {
+    const babyMsg: ChatMessage = {
       id: (Date.now() + 1).toString(),
       role: 'baby',
       text: replyText,
-      audioBase64: audioBase64 || undefined,
       timestamp: Date.now()
     };
 
-    setIsTyping(false);
-
-    setState(prev => ({
+    setAppState(prev => ({
       ...prev,
       dailyLogs: { 
         ...prev.dailyLogs, 
-        [today]: { ...currentLog, messages: [...updatedMessages, replyMsg] } 
+        [today]: { ...currentLog, messages: [...updatedMessages, babyMsg] } 
       }
     }));
+  };
 
-    if (audioBase64) {
-      playAudio(audioBase64);
+  const handleBubbleInteract = (type: 'kick' | 'rub') => {
+    // Update game stats slightly on interaction
+    const current = appState.user.gameStats;
+    if (!current) return;
+    
+    let updates = {};
+    if (type === 'rub') {
+       updates = { love: Math.min(100, current.love + 5), lastPlayed: Date.now() };
+    } else {
+       updates = { fun: Math.min(100, current.fun + 5), lastPlayed: Date.now() };
     }
+    
+    handleUpdateUser({ gameStats: { ...current, ...updates } });
   };
 
   // --- Render ---
 
-  if (view === ViewState.ONBOARDING) {
-    return <OnboardingView user={state.user} onUpdate={(u) => { handleUpdateUser(u); setView(ViewState.CONNECTION); }} />;
+  if (!appState.user.hasCompletedOnboarding) {
+    return <OnboardingView user={appState.user} onUpdate={handleUpdateUser} />;
   }
 
-  const today = getTodayString();
-  const currentDaily = state.cachedDailyContent[today] || null;
-  const currentHistory = state.dailyLogs[today]?.messages || [];
+  const todayContent = appState.cachedDailyContent[getTodayString()];
 
   return (
-    <div className="font-sans text-gray-900 bg-[#FFF7ED] dark:bg-gray-950 min-h-screen flex flex-col antialiased selection:bg-orange-200 selection:text-orange-900 transition-colors duration-500">
-      {/* Top Bar - Clickable Logo & App Name */}
-      <div className="fixed top-0 left-0 right-0 z-40 p-4 flex justify-between items-center pointer-events-none">
-        <div 
-          className="pointer-events-auto flex items-center gap-2 bg-white/40 dark:bg-black/40 backdrop-blur-md pl-1 pr-4 py-1 rounded-full shadow-sm cursor-pointer active:scale-95 transition-transform"
-          onClick={() => setView(ViewState.CONNECTION)}
-        >
-           <OrangeLogo className="w-9 h-9" />
-           <span className="font-bold text-gray-900 dark:text-white text-sm tracking-tight font-display">Orange Kutty</span>
-        </div>
-      </div>
+    <div className="font-sans antialiased text-gray-900 bg-[#FFF7ED]">
+      {/* Main View Render */}
+      {view === ViewState.CONNECTION && (
+        <ConnectionView 
+          user={appState.user} 
+          dailyContent={todayContent} 
+          isPlaying={isPlayingAudio} 
+          onPlay={handlePlayAudio}
+          onBubbleInteract={handleBubbleInteract}
+        />
+      )}
+      
+      {view === ViewState.TIPS && (
+        <TipsView weeks={appState.user.weeksPregnant} />
+      )}
+      
+      {view === ViewState.GAME && (
+        <GameView 
+          user={appState.user} 
+          onPlaySFX={handlePlaySFX}
+          onUpdateUser={handleUpdateUser}
+        />
+      )}
 
-      {/* Main View Area */}
-      <main className="flex-1 w-full max-w-md mx-auto shadow-2xl overflow-hidden relative bg-white dark:bg-gray-900 min-h-screen transition-colors duration-500">
-        {view === ViewState.CONNECTION && (
-          <ConnectionView 
-            user={state.user}
-            dailyContent={currentDaily}
-            isPlaying={isPlaying}
-            onPlay={() => {
-              if (isPlaying) stopAudio();
-              else if (currentDaily?.audioBase64) playAudio(currentDaily.audioBase64);
-            }}
-            onBubbleInteract={handleBubbleClick}
-          />
-        )}
+      {view === ViewState.CHAT && (
+        <ChatView 
+          history={appState.dailyLogs[getTodayString()]?.messages || []} 
+          onSend={handleSendMessage}
+          isTyping={isTyping} 
+          voiceName={appState.user.voiceName}
+        />
+      )}
 
-        {view === ViewState.CHAT && (
-          <ChatView 
-            history={currentHistory}
-            onSend={handleSendMessage}
-            isTyping={isTyping}
-            voiceName={state.user.voiceName}
-          />
-        )}
+      {view === ViewState.SETTINGS && (
+        <SettingsView 
+          user={appState.user} 
+          onUpdateUser={handleUpdateUser} 
+          onReset={clearState}
+        />
+      )}
 
-        {view === ViewState.GAME && (
-          <GameView 
-            user={state.user} 
-            onPlaySFX={playSFX} 
-            onUpdateUser={handleUpdateUser}
-          />
-        )}
-
-        {view === ViewState.SETTINGS && (
-          <SettingsView 
-            user={state.user}
-            onVoiceChange={handleVoiceChange}
-            onPreviewVoice={handleVoicePreview}
-            onReset={() => { clearState(); window.location.reload(); }}
-            onThemeChange={(t) => handleUpdateUser({ theme: t })}
-            onUpdateUser={handleUpdateUser}
-          />
-        )}
-      </main>
-
-      {/* Floating Organic Bottom Navigation */}
-      <nav className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/50 dark:border-gray-700 p-2 flex gap-2 max-w-[90%] transition-all">
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const isActive = view === item.view;
-          return (
-            <button
-              key={item.view}
-              onClick={() => {
-                stopAudio();
-                setView(item.view as ViewState);
-              }}
-              className={`
-                relative px-5 py-3 rounded-full flex items-center gap-2 transition-all duration-500 ease-out
-                ${isActive ? 'bg-gray-900 dark:bg-orange-500 text-white shadow-lg' : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-gray-700'}
-              `}
-            >
-              <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={`transition-transform duration-300 ${isActive ? 'scale-110' : ''}`} />
-              {isActive && (
-                <span className="text-xs font-bold animate-fade-in whitespace-nowrap hidden sm:block">
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/80 dark:bg-gray-900/90 backdrop-blur-xl border-t border-gray-200/50 dark:border-gray-800 pb-safe-bottom safe-area-bottom shadow-lg shadow-black/5">
+        <div className="flex justify-around items-center px-2 py-3 max-w-md mx-auto">
+          {NAV_ITEMS.map((item) => {
+            const isActive = view === item.view;
+            return (
+              <button
+                key={item.view}
+                onClick={() => setView(item.view as ViewState)}
+                className={`flex flex-col items-center gap-1.5 p-2 rounded-2xl transition-all duration-300 w-16 relative group ${isActive ? 'text-orange-600 dark:text-orange-400' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'}`}
+              >
+                {/* Active Indicator Background */}
+                <span className={`absolute inset-0 bg-orange-50 dark:bg-orange-900/20 rounded-2xl transition-all duration-300 ${isActive ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`}></span>
+                
+                <item.icon size={22} className={`relative z-10 transition-transform duration-300 ${isActive ? 'scale-110 drop-shadow-sm stroke-[2.5px]' : ''}`} />
+                <span className={`relative z-10 text-[9px] font-bold tracking-wide transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0 hidden'}`}>
                   {item.label}
                 </span>
-              )}
-            </button>
-          );
-        })}
+                {/* Simple dot for inactive state to keep spacing */}
+                <span className={`w-1 h-1 rounded-full bg-current opacity-20 transition-all ${!isActive ? 'block' : 'hidden'}`}></span>
+              </button>
+            );
+          })}
+        </div>
       </nav>
     </div>
   );
-}
+};
+
+export default App;
